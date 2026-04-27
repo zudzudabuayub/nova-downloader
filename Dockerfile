@@ -11,7 +11,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # Install yt-dlp via pip
-RUN pip3 install --no-cache-dir yt-dlp
+RUN pip3 install --no-cache-dir --break-system-packages yt-dlp
 
 # Copy project files and install dependencies
 COPY . .
