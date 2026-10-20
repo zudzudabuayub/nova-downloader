@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Сода-Сорт</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;600;700&display=swap">
+<style>
+/* Layout: one-screen game — ikat band + header, bottle shelf in a grid, tool row, brand legend; Pamir ridge silhouette behind */
+:root {
+  --night: #121630;
+  --night-2: #1d2450;
+  --panel: rgba(32, 40, 86, .72);
+  --ink: #f4efe4;
+  --muted: #a7abd0;
+  --gold: #e8b647;
+  --rose: #d4405a;
+  --teal: #2bb3a3;
+  --glass: rgba(220, 230, 255, .09);
+  --glass-edge: rgba(220, 230, 255, .42);
+  --ridge-far: #1a2148;
+  --ridge-near: #151b3b;
+  --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: radial-gradient(120% 70% at 50% 0%, var(--night-2), var(--night) 72%) var(--night);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  overflow-x: hidden;
+}
+.adras {
+  height: 10px;
+  background:
+    repeating-linear-gradient(90deg, var(--rose) 0 16px, var(--gold) 16px 20px, var(--teal) 20px 34px, var(--gold) 34px 38px);
+  filter: blur(.5px);
+  -webkit-mask: linear-gradient(90deg, #000 0 0), repeating-linear-gradient(135deg, transparent 0 3px, #000 3px 9px);
+  opacity: .9;
+}
+.app {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 28px;
+  box-sizing: border-box;
+}
+.bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.bar h1 { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: -.01em; margin: 0; line-height: 1; }
+.bar h1 span { color: var(--gold); }
+.bar p { margin: 6px 0 0; color: var(--muted); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+.stats { display: flex; gap: 8px; }
+.pill {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 7px 12px; border-radius: 999px;
+  background: var(--panel); border: 1px solid rgba(220, 230, 255, .14);
+  font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em;
+}
+.pill b { font-family: var(--display); font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+
+.stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding-top: 24px; }
+.board {
+  --w: clamp(40px, 11vw, 58px);
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 5), var(--w));
+  justify-content: center;
+  gap: 44px clamp(12px, 3.6vw, 28px);
+}
+.spot {
+  position: relative;
+  width: var(--w);
+  padding: 0; margin: 0; border: 0; background: none;
+  cursor: pointer; color: inherit; font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.spot::after {
+  content: ""; position: absolute; left: -10%; right: -10%; bottom: -8px; height: 10px;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, .45), transparent); z-index: -1;
+}
+.spot.flying { z-index: 30; }
+.bottle {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  transition: transform .18s ease;
+}
+.spot.sel .bottle { transform: translateY(-16px); }
+.cap {
+  width: 46%; height: calc(var(--w) * .17);
+  border-radius: 4px 4px 2px 2px;
+  background: var(--capc, var(--gold));
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .25), inset 0 2px 0 rgba(255, 255, 255, .3);
+  opacity: 0; transform: translateY(-18px) scale(.7);
+  transition: opacity .2s, transform .35s cubic-bezier(.3, 1.6, .5, 1);
+}
+.neck {
+  width: 40%; height: calc(var(--w) * .44);
+  margin-bottom: -2px;
+  background: var(--glass);
+  border: 1.5px solid var(--glass-edge); border-bottom: 0;
+  border-radius: 3px 3px 0 0;
+}
+.body {
+  position: relative;
+  width: 100%; height: calc(var(--w) * 2.9);
+  box-sizing: border-box;
+  border: 1.5px solid var(--glass-edge);
+  border-radius: calc(var(--w) * .36) calc(var(--w) * .36) calc(var(--w) * .3) calc(var(--w) * .3);
+  background: var(--glass);
+  overflow: hidden;
+  transition: box-shadow .2s;
+}
+.spot.sel .body { box-shadow: 0 0 0 2px var(--gold), 0 10px 26px rgba(232, 182, 71, .25); }
+.spot:focus-visible { outline: none; }
+.spot:focus-visible .body { box-shadow: 0 0 0 2px var(--ink); }
+.liquid {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 86%;
+  display: flex; flex-direction: column-reverse;
+}
+.slot {
+  height: 0; overflow: hidden;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .18), transparent 30%, rgba(255, 255, 255, .14) 55%, rgba(0, 0, 0, .12)) var(--c);
+  color: var(--t);
+  display: grid; place-items: center;
+  transition: height .34s ease;
+}
+.slot.on { height: 25%; }
+.slot.on:not(.join) { box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .28); }
+.slot span {
+  font-family: var(--display); font-weight: 700;
+  font-size: calc(var(--w) * var(--fs, .15));
+  letter-spacing: .02em; white-space: nowrap;
+}
+.fizz {
+  position: absolute; inset: 0; pointer-events: none; opacity: .35;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, .9) 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(255, 255, 255, .7) 1px, transparent 1.4px);
+  background-size: 13px 19px, 17px 23px;
+  background-position: 3px 0, 9px 7px;
+  animation: fizz 3.2s linear infinite;
+  -webkit-mask: linear-gradient(to top, #000 0 86%, transparent 86%);
+}
+@keyframes fizz { to { background-position: 3px -38px, 9px -39px; } }
+.shine {
+  position: absolute; top: 8%; bottom: 6%; left: 14%; width: 12%;
+  border-radius: 99px; background: linear-gradient(rgba(255, 255, 255, .35), rgba(255, 255, 255, .05));
+  pointer-events: none;
+}
+.label {
+  position: absolute; left: 0; right: 0; top: 40%; height: 22%;
+  display: grid; place-items: center;
+  background: var(--band, var(--rose)); color: #fff;
+  border-block: 2px solid rgba(255, 255, 255, .55);
+  font-family: var(--display); font-weight: 800; white-space: nowrap;
+  font-size: calc(var(--w) * var(--lfs, .16));
+  transform: scaleX(0); transition: transform .4s .15s cubic-bezier(.2, .9, .3, 1.2);
+}
+.spot.done .cap { opacity: 1; transform: none; }
+.spot.done .label { transform: none; }
+.spot.done .slot span { opacity: 0; }
+.spot.hint .body { animation: hint 1s ease-in-out infinite; }
+@keyframes hint { 50% { box-shadow: 0 0 0 3px var(--gold), 0 0 22px rgba(232, 182, 71, .6); } }
+
+.stream {
+  position: fixed; z-index: 40; width: 6px; border-radius: 3px;
+  transform-origin: top; pointer-events: none;
+}
+.msg { margin: 0; min-height: 2.6em; text-align: center; color: var(--muted); font-size: 14px; max-width: 42ch; text-wrap: balance; }
+
+.tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.tools button, .win button {
+  font: 600 14px var(--body);
+  color: var(--ink); background: var(--panel);
+  border: 1px solid rgba(220, 230, 255, .2); border-radius: 12px;
+  padding: 11px 16px; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.tools button:hover:not(:disabled) { border-color: var(--gold); }
+.tools button:active:not(:disabled) { transform: translateY(1px); }
+.tools button:disabled { opacity: .4; cursor: default; }
+.tools button:focus-visible, .win button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.tools .kbd { color: var(--gold); font-family: var(--display); font-size: 12px; margin-right: 4px; }
+
+.legend { background: var(--panel); border: 1px solid rgba(220, 230, 255, .12); border-radius: 16px; padding: 14px 16px; }
+.legend h2 { margin: 0 0 10px; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.legend ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.legend li { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.legend i { width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--capc); }
+.legend small { color: var(--muted); font-weight: 400; font-size: 12px; }
+
+.ridge { position: fixed; left: 0; right: 0; bottom: 0; width: 100%; height: 34vh; z-index: 0; pointer-events: none; }
+
+.win {
+  position: fixed; inset: 0; z-index: 60;
+  display: grid; place-items: center;
+  background: rgba(10, 12, 30, .6); backdrop-filter: blur(6px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.card {
+  width: min(360px, 100%); box-sizing: border-box; text-align: center;
+  background: var(--night-2); border: 1px solid rgba(220, 230, 255, .18); border-radius: 22px;
+  padding: 26px 22px 22px; box-shadow: 0 30px 60px rgba(0, 0, 0, .45);
+  animation: pop .45s cubic-bezier(.2, 1.4, .4, 1);
+}
+@keyframes pop { from { transform: scale(.85); opacity: 0; } }
+.card h2 { font-family: var(--display); font-weight: 800; font-size: 22px; margin: 0 0 6px; text-wrap: balance; }
+.card p { margin: 0 0 16px; color: var(--muted); }
+.caps { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.caps i {
+  width: 26px; height: 26px; border-radius: 50%; background: var(--capc);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .25), 0 0 0 2px var(--c);
+  animation: drop .5s backwards cubic-bezier(.3, 1.6, .5, 1);
+}
+@keyframes drop { from { transform: translateY(-30px); opacity: 0; } }
+.win button { background: var(--gold); color: #2a1c00; border-color: var(--gold); font-weight: 700; padding: 13px 22px; }
+
+@media (max-width: 420px) {
+  .bar h1 { font-size: 22px; }
+  .tools button { padding: 10px 12px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fizz, .spot.hint .body, .card, .caps i { animation: none; }
+  .slot, .label, .cap, .bottle { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<svg class="ridge" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">
+  <path fill="var(--ridge-far)" d="M0 210 L90 150 L160 185 L260 95 L330 150 L420 120 L520 40 L600 120 L680 90 L760 150 L860 70 L940 135 L1030 110 L1110 160 L1200 120 V300 H0 Z"/>
+  <path fill="#e9ecff" opacity=".08" d="M520 40 L548 66 L534 62 L522 74 L506 60 Z M860 70 L884 92 L868 90 L856 98 L846 84 Z"/>
+  <path fill="var(--ridge-near)" d="M0 260 L120 200 L220 240 L330 180 L450 235 L560 190 L690 245 L800 205 L930 250 L1060 200 L1200 240 V300 H0 Z"/>
+</svg>
+
+<div class="app">
+  <div class="adras" aria-hidden="true"></div>
+  <header class="bar">
+    <div>
+      <h1>Сода<span>-</span>Сорт</h1>
+      <p>Демо · Таджикистан</p>
+    </div>
+    <div class="stats">
+      <span class="pill">Уровень <b id="lvl">1</b></span>
+      <span class="pill">Ходы <b id="moves">0</b></span>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div id="board" class="board" role="group" aria-label="Бутылки"></div>
+    <p id="msg" class="msg" aria-live="polite">Нажмите на бутылку, потом на ту, куда перелить. Соберите каждый бренд в свою бутылку.</p>
+  </main>
+
+  <nav class="tools" aria-label="Действия">
+    <button id="undo" type="button"><span class="kbd">↶</span>Отменить</button>
+    <button id="restart" type="button"><span class="kbd">⟲</span>Заново</button>
+    <button id="extra" type="button"><span class="kbd">+</span>Бутылка</button>
+    <button id="hint" type="button"><span class="kbd">?</span>Подсказка</button>
+  </nav>
+
+  <section class="legend" aria-label="Бренды уровня">
+    <h2>Бренды на полке</h2>
+    <ul id="legend"></ul>
+  </section>
+</div>
+
+<div id="stream" class="stream" hidden></div>
+
+<div id="win" class="win" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+    <h2 id="winTitle">Полка собрана</h2>
+    <p id="winText"></p>
+    <div id="winCaps" class="caps"></div>
+    <button id="next" type="button">Следующий уровень</button>
+  </div>
+</div>
+
+<script>
+// Бренды: замените или добавьте свои. c — цвет напитка, t — цвет надписи на слое,
+// cap — крышка, band — этикетка на собранной бутылке.
+const BRANDS = [
+  { name: 'RC Cola',   short: 'RC',       c: '#6f3015', t: '#ffe7d2', cap: '#1f4fa0', band: '#c8102e', note: 'кола' },
+  { name: 'Fanta',     short: 'FANTA',    c: '#ff7b00', t: '#ffffff', cap: '#1d4fbf', band: '#1d4fbf', note: 'апельсин' },
+  { name: 'Sprite',    short: 'SPRITE',   c: '#1aa84b', t: '#ffffff', cap: '#0d5c2c', band: '#0d5c2c', note: 'лимон-лайм' },
+  { name: 'Pepsi',     short: 'PEPSI',    c: '#1d5ad8', t: '#ffffff', cap: '#0b2566', band: '#e31b23', note: 'кола' },
+  { name: 'Coca-Cola', short: 'COCA',     c: '#e0151f', t: '#ffffff', cap: '#8f0b12', band: '#8f0b12', note: 'кола' },
+  { name: 'Шифо',      short: 'ШИФО',     c: '#86d6f2', t: '#0b3b55', cap: '#1f7ab8', band: '#1f7ab8', note: 'местная вода' },
+  { name: 'Буратино',  short: 'БУРАТИНО', c: '#f4c21b', t: '#4a3300', cap: '#b0430c', band: '#b0430c', note: 'лимонад' },
+];
+const CAP = 4;
+const MIN_BRANDS = 3;
+
+const $ = (id) => document.getElementById(id);
+const board = $('board'), msgEl = $('msg'), streamEl = $('stream');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let spots = [];
+let G = null;
+
+/* ---------- правила ---------- */
+const topOf = (b) => b[b.length - 1];
+const isDone = (b) => b.length === CAP && b.every((c) => c === b[0]);
+const isUniform = (b) => b.every((c) => c === b[0]);
+const solved = (s) => s.every((b) => b.length === 0 || isDone(b));
+
+function canPour(s, a, b) {
+  if (a === b) return false;
+  const A = s[a], B = s[b];
+  if (!A.length || B.length >= CAP) return false;
+  return !B.length || topOf(B) === topOf(A);
+}
+function pourAmount(s, a, b) {
+  const A = s[a], c = topOf(A);
+  let n = 0;
+  for (let i = A.length - 1; i >= 0 && A[i] === c; i--) n++;
+  return Math.min(n, CAP - s[b].length);
+}
+function applyMove(s, a, b) {
+  const n = pourAmount(s, a, b), ns = s.map((x) => x.slice());
+  for (let i = 0; i < n; i++) ns[b].push(ns[a].pop());
+  return ns;
+}
+function usefulMoves(s) {
+  const out = [];
+  for (let a = 0; a < s.length; a++) {
+    const A = s[a];
+    if (!A.length || isDone(A)) continue;
+    let triedEmpty = false;
+    for (let b = 0; b < s.length; b++) {
+      if (!canPour(s, a, b)) continue;
+      if (!s[b].length) {
+        if (isUniform(A) || triedEmpty) continue;
+        triedEmpty = true;
+      }
+      out.push([a, b]);
+    }
+  }
+  return out;
+}
+
+/* ---------- решатель (для генерации и подсказок) ---------- */
+function solve(start, limit) {
+  const seen = new Set(), path = [];
+  let count = 0;
+  const key = (s) => s.map((b) => b.join('')).sort().join('|');
+  function dfs(s) {
+    if (solved(s)) return true;
+    const k = key(s);
+    if (seen.has(k) || ++count > limit) return false;
+    seen.add(k);
+    for (const [a, b] of usefulMoves(s)) {
+      path.push([a, b]);
+      if (dfs(applyMove(s, a, b))) return true;
+      path.pop();
+    }
+    return false;
+  }
+  return dfs(start) ? path.slice() : null;
+}
+
+/* ---------- уровни ---------- */
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function brandsFor(level) { return Math.min(MIN_BRANDS + level - 1, BRANDS.length); }
+function generate(level) {
+  const k = brandsFor(level);
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const rnd = mulberry32(level * 7919 + attempt * 104729 + 13);
+    const units = [];
+    for (let b = 0; b < k; b++) for (let j = 0; j < CAP; j++) units.push(b);
+    for (let i = units.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [units[i], units[j]] = [units[j], units[i]];
+    }
+    const s = [];
+    for (let b = 0; b < k; b++) s.push(units.slice(b * CAP, (b + 1) * CAP));
+    s.push([], []);
+    if (s.some(isDone)) continue;
+    if (solve(s, 120000)) return s;
+  }
+  return null;
+}
+
+/* ---------- отрисовка ---------- */
+function buildBoard() {
+  board.innerHTML = '';
+  const n = G.bottles.length;
+  board.style.setProperty('--cols', n <= 5 ? n : Math.ceil(n / 2));
+  spots = G.bottles.map((_, i) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'spot';
+    el.innerHTML =
+      '<div class="bottle"><div class="cap"></div><div class="neck"></div>' +
+      '<div class="body"><div class="liquid">' +
+      '<div class="slot"><span></span></div>'.repeat(CAP) +
+      '</div><div class="fizz"></div><div class="label"></div><div class="shine"></div></div></div>';
+    el.addEventListener('click', () => onSpot(i));
+    board.appendChild(el);
+    return el;
+  });
+  spots.forEach((_, i) => updateBottle(i));
+}
+function updateBottle(i) {
+  const el = spots[i], s = G.bottles[i], slots = el.querySelectorAll('.slot');
+  for (let j = 0; j < CAP; j++) {
+    const sl = slots[j], c = s[j];
+    if (c === undefined) { sl.classList.remove('on'); continue; }
+    const br = BRANDS[c];
+    sl.style.setProperty('--c', br.c);
+    sl.style.setProperty('--t', br.t);
+    sl.style.setProperty('--fs', Math.min(0.17, 1 / br.short.length).toFixed(3));
+    const runStart = j === 0 || s[j - 1] !== c;
+    sl.classList.toggle('join', !runStart);
+    sl.firstChild.textContent = runStart ? br.short : '';
+    sl.classList.add('on');
+  }
+  const done = isDone(s);
+  el.classList.toggle('done', done);
+  if (done) {
+    const br = BRANDS[s[0]], lbl = el.querySelector('.label');
+    el.style.setProperty('--capc', br.cap);
+    el.style.setProperty('--band', br.band);
+    el.style.setProperty('--lfs', Math.min(0.2, 1.25 / br.name.length).toFixed(3));
+    lbl.textContent = br.name;
+  }
+  const desc = s.length ? s.map((c) => BRANDS[c].name).reverse().join(', ') : 'пустая';
+  el.setAttribute('aria-label', `Бутылка ${i + 1}: ${done ? 'собрана, ' : ''}${desc}`);
+}
+function updateHud() {
+  $('lvl').textContent = G.level;
+  $('moves').textContent = G.moves;
+  $('undo').disabled = !G.history.length;
+  $('extra').disabled = G.extraUsed;
+}
+function renderLegend() {
+  const used = [...new Set(G.bottles.flat())].sort((a, b) => a - b);
+  $('legend').innerHTML = used.map((c) => {
+    const b = BRANDS[c];
+    return `<li style="--c:${b.c};--capc:${b.cap}"><i></i>${b.name} <small>${b.note}</small></li>`;
+  }).join('');
+}
+const say = (t) => { msgEl.textContent = t; };
+
+/* ---------- ход ---------- */
+function clearSel() {
+  if (G.sel !== null) spots[G.sel].classList.remove('sel');
+  G.sel = null;
+}
+function clearHint() { spots.forEach((s) => s.classList.remove('hint')); }
+function shake(i) {
+  if (reduceMotion) return;
+  spots[i].animate(
+    [{ transform: 'translateX(0)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(0)' }],
+    { duration: 240 }
+  );
+}
+function onSpot(i) {
+  if (G.busy) return;
+  clearHint();
+  const s = G.bottles;
+  if (G.sel === null) {
+    if (!s[i].length) { shake(i); say('Бутылка пустая — сначала выберите ту, из которой лить.'); return; }
+    if (isDone(s[i])) { shake(i); say(`${BRANDS[s[i][0]].name} уже собрана и закрыта.`); return; }
+    G.sel = i;
+    spots[i].classList.add('sel');
+    return;
+  }
+  if (G.sel === i) { clearSel(); return; }
+  if (canPour(s, G.sel, i)) { pour(G.sel, i); return; }
+  if (s[i].length >= CAP) say('Эта бутылка уже полная.');
+  else say(`Нельзя: сверху ${BRANDS[topOf(s[i])].name}, а вы льёте ${BRANDS[topOf(s[G.sel])].name}.`);
+  shake(i);
+}
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function pour(a, b) {
+  G.busy = true;
+  const n = pourAmount(G.bottles, a, b);
+  const color = BRANDS[topOf(G.bottles[a])];
+  const spotA = spots[a], spotB = spots[b], bottleA = spotA.querySelector('.bottle');
+  let toFrame = null;
+
+  if (!reduceMotion) {
+    const ra = spotA.getBoundingClientRect(), rb = spotB.getBoundingClientRect();
+    const H = bottleA.offsetHeight;
+    const toRight = rb.left >= ra.left;
+    const deg = toRight ? 74 : -74, rad = (deg * Math.PI) / 180;
+    const tipX = rb.left + rb.width / 2, tipY = rb.top - 10;
+    // горлышко повернутой бутылки должно оказаться над целевой
+    const cx = tipX - (H / 2) * Math.sin(rad), cy = tipY + (H / 2) * Math.cos(rad);
+    const dx = cx - (ra.left + ra.width / 2), dy = cy - (ra.top + H / 2);
+    toFrame = `translate(${dx}px, ${dy}px) rotate(${deg}deg)`;
+    spotA.classList.add('flying');
+    await bottleA.animate([{ transform: 'translateY(-16px)' }, { transform: toFrame }],
+      { duration: 380, easing: 'cubic-bezier(.3,.7,.2,1)', fill: 'forwards' }).finished;
+
+    const body = spotB.querySelector('.body').getBoundingClientRect();
+    const surface = body.bottom - body.height * 0.86 * (G.bottles[b].length / CAP);
+    Object.assign(streamEl.style, { left: tipX - 3 + 'px', top: tipY + 'px', height: Math.max(8, surface - tipY) + 'px', background: color.c });
+    streamEl.hidden = false;
+    streamEl.animate([{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], { duration: 120, fill: 'forwards' });
+  }
+
+  G.history.push(G.bottles.map((x) => x.slice()));
+  for (let i = 0; i < n; i++) G.bottles[b].push(G.bottles[a].pop());
+  G.moves++;
+  updateBottle(a); updateBottle(b); updateHud(); saveLevel();
+
+  if (!reduceMotion) {
+    await wait(380);
+    await streamEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120 }).finished;
+    streamEl.hidden = true;
+    streamEl.getAnimations().forEach((x) => x.cancel());
+    await bottleA.animate([{ transform: toFrame }, { transform: 'none' }],
+      { duration: 320, easing: 'ease-in-out', fill: 'forwards' }).finished;
+    bottleA.style.transition = 'none';
+    spotA.classList.remove('sel', 'flying');
+    bottleA.getAnimations().forEach((x) => x.cancel());
+    void bottleA.offsetWidth;
+    bottleA.style.transition = '';
+  } else {
+    spotA.classList.remove('sel');
+  }
+  G.sel = null;
+  G.busy = false;
+  afterMove(b);
+}
+
+function afterMove(b) {
+  if (solved(G.bottles)) { setTimeout(showWin, reduceMotion ? 0 : 450); say('Все бренды на своих местах!'); return; }
+  if (isDone(G.bottles[b])) say(`${BRANDS[G.bottles[b][0]].name} собрана. Крышка закрыта.`);
+  else if (!usefulMoves(G.bottles).length) say('Ходов больше нет. Отмените ход, добавьте бутылку или начните заново.');
+  else say('');
+}
+
+/* ---------- кнопки ---------- */
+$('undo').addEventListener('click', () => {
+  if (G.busy || !G.history.length) return;
+  clearSel(); clearHint();
+  G.bottles = G.history.pop();
+  G.moves = Math.max(0, G.moves - 1);
+  spots.forEach((_, i) => updateBottle(i));
+  updateHud();
+  say('Ход отменён.');
+});
+$('restart').addEventListener('click', () => { if (!G.busy) newLevel(G.level); });
+$('extra').addEventListener('click', () => {
+  if (G.busy || G.extraUsed) return;
+  clearSel(); clearHint();
+  G.extraUsed = true;
+  G.bottles.push([]);
+  G.history.forEach((h) => h.push([]));
+  buildBoard(); updateHud();
+  say('Добавлена пустая бутылка. Одна на уровень.');
+});
+$('hint').addEventListener('click', () => {
+  if (G.busy) return;
+  clearSel(); clearHint();
+  say('Ищу ход…');
+  setTimeout(() => {
+    const path = solve(G.bottles, 300000);
+    if (!path) { say('Из этого положения не решить. Отмените пару ходов или добавьте бутылку.'); return; }
+    if (!path.length) return;
+    const [a, b] = path[0];
+    spots[a].classList.add('hint'); spots[b].classList.add('hint');
+    say(`Подсказка: перелейте ${BRANDS[topOf(G.bottles[a])].name} из бутылки ${a + 1} в бутылку ${b + 1}.`);
+  }, 30);
+});
+$('next').addEventListener('click', () => { $('win').hidden = true; newLevel(G.level + 1); });
+
+function showWin() {
+  const used = [...new Set(G.bottles.flat())].sort((x, y) => x - y);
+  $('winTitle').textContent = `Уровень ${G.level} пройден`;
+  $('winText').textContent = `${used.length} ${plural(used.length, 'бренд', 'бренда', 'брендов')} за ${G.moves} ${plural(G.moves, 'ход', 'хода', 'ходов')}.`;
+  $('winCaps').innerHTML = used.map((c, k) =>
+    `<i title="${BRANDS[c].name}" style="--capc:${BRANDS[c].cap};--c:${BRANDS[c].c};animation-delay:${k * 70}ms"></i>`).join('');
+  $('win').hidden = false;
+  $('next').focus();
+}
+function plural(n, one, few, many) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}
+
+/* ---------- старт и сохранение ---------- */
+function saveLevel() { try { localStorage.setItem('soda-sort.level', String(G.level)); } catch (e) {} }
+function loadLevel() { try { return parseInt(localStorage.getItem('soda-sort.level'), 10) || 1; } catch (e) { return 1; } }
+
+function newLevel(level) {
+  const bottles = generate(level);
+  G = { level, bottles, history: [], moves: 0, extraUsed: false, sel: null, busy: false };
+  $('win').hidden = true;
+  buildBoard(); updateHud(); renderLegend(); saveLevel();
+  say(level === 1
+    ? 'Нажмите на бутылку, потом на ту, куда перелить. Соберите каждый бренд в свою бутылку.'
+    : `Уровень ${level}: ${brandsFor(level)} ${plural(brandsFor(level), 'бренд', 'бренда', 'брендов')} на полке.`);
+}
+
+function start(data) {
+  if (data && Array.isArray(data.bottles)) {
+    G = { level: data.level, bottles: data.bottles, history: data.history || [], moves: data.moves || 0,
+          extraUsed: !!data.extraUsed, sel: null, busy: false };
+    buildBoard(); updateHud(); renderLegend();
+    if (solved(G.bottles)) showWin();
+  } else {
+    newLevel(loadLevel());
+  }
+}
+try {
+  window.claude?.hot?.snapshot?.(() => G && ({
+    level: G.level, bottles: G.bottles, history: G.history, moves: G.moves, extraUsed: G.extraUsed,
+  }));
+} catch (e) {}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>
